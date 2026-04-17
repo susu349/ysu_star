@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mysql --version)",
+      "Bash(docker --version)",
+      "Bash(chmod:*)"
+    ]
+  }
+}
