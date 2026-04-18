@@ -44,6 +44,7 @@
           <div v-if="activeTab === 'recommend'">
             <div class="section-header" style="margin-bottom: 20px;">
               <h3 class="section-title">为你推荐的赛事</h3>
+              <button class="btn btn-primary" @click="fetchCompetitions">刷新数据</button>
             </div>
 
             <div v-if="loading" class="loading-state">
@@ -118,7 +119,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/store/modules/user'
-import { getContestList } from '@/api/contest'
+import axios from 'axios'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -155,9 +156,9 @@ const fetchCompetitions = async () => {
   loading.value = true
   try {
     console.log('开始调用 API...')
-    const response = await getContestList({ limit: 500 })
+    const response = await axios.get('http://localhost:8000/api/v1/contest/list?limit=500')
     console.log('API 返回:', response)
-    competitions.value = response.items || response || []
+    competitions.value = response.data.items || response.data || []
     console.log('competitions.value:', competitions.value)
   } catch (error) {
     console.error('获取赛事列表失败:', error)
