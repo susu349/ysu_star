@@ -23,6 +23,36 @@ const routes = [
     name: 'Home',
     component: () => import('@/views/home/Home.vue'),
     meta: { requiresAuth: true }
+  },
+  {
+    path: '/contest',
+    name: 'Contest',
+    component: () => import('@/views/contest/TeamHall.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/contest/:id',
+    name: 'ContestDetail',
+    component: () => import('@/views/contest/ContestDetail.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/rag',
+    name: 'Rag',
+    component: () => import('@/views/rag/Index.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/map',
+    name: 'Map',
+    component: () => import('@/views/map/Index.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/forum',
+    name: 'Forum',
+    component: () => import('@/views/forum/Index.vue'),
+    meta: { requiresAuth: true }
   }
 ]
 

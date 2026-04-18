@@ -18,12 +18,16 @@ export const useUserStore = defineStore('user', {
 
   actions: {
     async login(loginData) {
+      console.log('userStore.login 被调用, loginData:', loginData)
       const res = await login(loginData)
+      console.log('login API 返回:', res)
       this.token = res.access_token
       this.refreshToken = res.refresh_token
       setToken(res.access_token)
       setRefreshToken(res.refresh_token)
+      console.log('Token 已保存, 准备获取用户信息...')
       await this.fetchUserInfo()
+      console.log('用户信息获取完成')
       return res
     },
 
@@ -33,9 +37,12 @@ export const useUserStore = defineStore('user', {
     },
 
     async fetchUserInfo() {
+      console.log('fetchUserInfo 被调用...')
       const res = await getCurrentUser()
+      console.log('getCurrentUser 返回:', res)
       this.userInfo = res
       setUserInfo(res)
+      console.log('用户信息已保存:', this.userInfo)
       return res
     },
 

@@ -15,22 +15,22 @@
         <p class="subtitle">你的智能校园生活伙伴</p>
       </div>
       <div class="modules-grid">
-        <div class="module-card">
+        <div class="module-card" @click="goToRag">
           <div class="module-icon">📚</div>
           <h3>RAG知识检索</h3>
           <p>校园信息智能问答</p>
         </div>
-        <div class="module-card">
+        <div class="module-card" @click="goToContest">
           <div class="module-icon">🏆</div>
           <h3>赛事推荐与组队</h3>
           <p>智能匹配，高效协作</p>
         </div>
-        <div class="module-card">
+        <div class="module-card" @click="goToMap">
           <div class="module-icon">🗺️</div>
           <h3>智慧地图</h3>
           <p>AR导航，轻松找路</p>
         </div>
-        <div class="module-card">
+        <div class="module-card" @click="goToForum">
           <div class="module-icon">💬</div>
           <h3>校园论坛</h3>
           <p>畅所欲言，交流分享</p>
@@ -63,6 +63,22 @@ const handleLogout = async () => {
     await userStore.logout()
     router.push('/login')
   }
+}
+
+const goToContest = () => {
+  router.push('/contest')
+}
+
+const goToRag = () => {
+  router.push('/rag')
+}
+
+const goToMap = () => {
+  router.push('/map')
+}
+
+const goToForum = () => {
+  router.push('/forum')
 }
 </script>
 
@@ -160,6 +176,7 @@ const handleLogout = async () => {
   text-align: center;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   transition: transform 0.3s, box-shadow 0.3s;
+  cursor: pointer;
 }
 
 .module-card:hover {

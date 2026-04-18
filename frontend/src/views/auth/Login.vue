@@ -38,6 +38,8 @@ const loginData = reactive({
 })
 
 const handleLogin = async () => {
+  console.log('开始登录...', loginData)
+
   if (!loginData.id || !loginData.password) {
     alert('请输入学号/工号和密码')
     return
@@ -45,11 +47,17 @@ const handleLogin = async () => {
 
   loading.value = true
   try {
-    await userStore.login(loginData)
-    alert('登录成功！')
-    router.push('/home')
+    console.log('调用 userStore.login...')
+    const loginResult = await userStore.login(loginData)
+    console.log('登录成功, loginResult:', loginResult)
+    console.log('userStore token:', userStore.token)
+    console.log('userStore userInfo:', userStore.userInfo)
+    console.log('准备跳转到 /home...')
+    await router.push('/home')
+    console.log('跳转完成')
   } catch (error) {
-    console.error('Login failed:', error)
+    console.error('登录失败:', error)
+    console.error('错误详情:', error.response?.data)
     alert(error.response?.data?.detail || '登录失败，请检查学号/工号和密码')
   } finally {
     loading.value = false
