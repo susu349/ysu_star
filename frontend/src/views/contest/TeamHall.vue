@@ -15,7 +15,7 @@
     <section class="page-header">
       <div class="container">
         <h1 class="page-title">赛事智能组队</h1>
-        <p class="page-subtitle">AI 为你精准匹配技能互补的队友，轻松找到理想的竞赛伙伴</p>
+        <p class="page-subtitle">共 {{ competitions.length }} 个赛事</p>
         <div class="tab-group">
           <div class="tab" :class="{ active: activeTab === 'recommend' }" @click="setActiveTab('recommend')">赛事推荐</div>
           <div class="tab" :class="{ active: activeTab === 'team' }" @click="setActiveTab('team')">组队大厅</div>
@@ -63,6 +63,7 @@
                   <div class="competition-meta">
                     <span class="tag" :class="getLevelTagClass(competition.level)">{{ getLevelText(competition.level) }}</span>
                     <span class="meta-item" v-if="competition.organizer">🏠 {{ competition.organizer }}</span>
+                    <span class="meta-item" v-if="competition.category">📂 {{ competition.category }}</span>
                     <span class="meta-item">👥 {{ competition.team_count || 0 }} 支队伍</span>
                   </div>
                 </div>
@@ -153,9 +154,11 @@ const setLevel = (level) => {
 const fetchCompetitions = async () => {
   loading.value = true
   try {
+    console.log('开始调用 API...')
     const response = await getContestList({ limit: 500 })
-    console.log('赛事数据:', response)
+    console.log('API 返回:', response)
     competitions.value = response.items || response || []
+    console.log('competitions.value:', competitions.value)
   } catch (error) {
     console.error('获取赛事列表失败:', error)
   } finally {
@@ -217,47 +220,15 @@ onMounted(() => {
 })
 </script>
 
-<style>
-/* 直接使用 telemplate/UI/team.html 的样式 */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-:root {
-  --primary: #2C68FF;
-  --primary-hover: #1a53e6;
-  --success: #34E4AA;
-  --warning: #FF7D00;
-  --danger: #F53F3F;
-  --gray-100: #F7F8FA;
-  --gray-200: #E5E6EB;
-  --gray-500: #86909C;
-  --gray-700: #4E5969;
-  --gray-900: #1D2129;
-  --radius: 4px;
-  --radius-lg: 8px;
-  --shadow: 0 2px 8px rgba(0,0,0,0.08);
-  --shadow-lg: 0 8px 24px rgba(0,0,0,0.12);
-  --transition: all 0.25s ease;
-}
-
-body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  background-color: var(--gray-100);
-  color: var(--gray-900);
-  line-height: 1.6;
-}
-
+<style scoped>
 .team-container {
   min-height: 100vh;
-  background: var(--gray-100);
+  background: #f5f7fa;
 }
 
 .header {
   background: #fff;
-  box-shadow: var(--shadow);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
   position: sticky;
   top: 0;
   z-index: 99;
@@ -276,7 +247,7 @@ body {
 .logo {
   font-size: 18px;
   font-weight: 600;
-  color: var(--primary);
+  color: #2C68FF;
   cursor: pointer;
   margin: 0;
 }
@@ -289,13 +260,13 @@ body {
 
 .welcome-text {
   font-size: 14px;
-  color: var(--gray-700);
+  color: #4E5969;
 }
 
 .logout-btn {
   padding: 8px 20px;
   background: rgba(44, 104, 255, 0.1);
-  color: var(--primary);
+  color: #2C68FF;
   border: 1px solid rgba(44, 104, 255, 0.2);
   border-radius: 6px;
   cursor: pointer;
@@ -342,7 +313,7 @@ body {
   border-radius: 20px;
   cursor: pointer;
   font-size: 14px;
-  transition: var(--transition);
+  transition: all 0.25s ease;
 }
 
 .tab:hover {
@@ -363,8 +334,8 @@ body {
 
 .sidebar {
   background: white;
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
   padding: 24px;
   height: fit-content;
   position: sticky;
@@ -374,7 +345,7 @@ body {
 .sidebar-title {
   font-size: 14px;
   font-weight: 600;
-  color: var(--gray-900);
+  color: #1D2129;
   margin-bottom: 16px;
 }
 
@@ -395,43 +366,43 @@ body {
 .category-list li {
   padding: 10px 12px;
   margin-bottom: 4px;
-  border-radius: var(--radius);
+  border-radius: 4px;
   cursor: pointer;
   font-size: 14px;
-  color: var(--gray-700);
-  transition: var(--transition);
+  color: #4E5969;
+  transition: all 0.25s ease;
 }
 
 .category-list li:hover,
 .category-list li.active {
-  background: var(--gray-100);
-  color: var(--primary);
+  background: #F7F8FA;
+  color: #2C68FF;
 }
 
 .category-list li span {
   float: right;
-  color: var(--gray-500);
+  color: #86909C;
   font-size: 13px;
 }
 
 .tag {
   display: inline-block;
   padding: 4px 12px;
-  background: var(--gray-100);
+  background: #F7F8FA;
   border-radius: 12px;
   font-size: 12px;
-  color: var(--gray-700);
+  color: #4E5969;
   cursor: pointer;
-  transition: var(--transition);
+  transition: all 0.25s ease;
 }
 
 .tag:hover {
-  background: var(--gray-200);
+  background: #E5E6EB;
 }
 
 .tag-primary {
   background: rgba(44, 104, 255, 0.1);
-  color: var(--primary);
+  color: #2C68FF;
 }
 
 .tag-success {
@@ -441,44 +412,44 @@ body {
 
 .tag-warning {
   background: rgba(255, 125, 0, 0.1);
-  color: var(--warning);
+  color: #FF7D00;
 }
 
 .btn {
   padding: 10px 20px;
-  border-radius: var(--radius);
+  border-radius: 4px;
   font-size: 14px;
   border: none;
   cursor: pointer;
-  transition: var(--transition);
+  transition: all 0.25s ease;
   display: inline-flex;
   align-items: center;
   gap: 6px;
 }
 
 .btn-primary {
-  background: var(--primary);
+  background: #2C68FF;
   color: white;
 }
 
 .btn-primary:hover {
-  background: var(--primary-hover);
+  background: #1a53e6;
 }
 
 .btn-success {
-  background: var(--success);
+  background: #34E4AA;
   color: white;
 }
 
 .btn-outline {
   background: white;
-  border: 1px solid var(--gray-200);
-  color: var(--gray-700);
+  border: 1px solid #E5E6EB;
+  color: #4E5969;
 }
 
 .btn-outline:hover {
-  border-color: var(--primary);
-  color: var(--primary);
+  border-color: #2C68FF;
+  color: #2C68FF;
 }
 
 .btn-sm {
@@ -488,16 +459,16 @@ body {
 
 .competition-card {
   background: white;
-  border-radius: var(--radius);
+  border-radius: 4px;
   padding: 24px;
-  box-shadow: var(--shadow);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
   margin-bottom: 16px;
-  transition: var(--transition);
+  transition: all 0.25s ease;
   cursor: pointer;
 }
 
 .competition-card:hover {
-  box-shadow: var(--shadow-lg);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
 }
 
 .competition-header {
@@ -510,7 +481,7 @@ body {
 .competition-title {
   font-size: 18px;
   font-weight: 600;
-  color: var(--gray-900);
+  color: #1D2129;
   margin-bottom: 8px;
 }
 
@@ -525,12 +496,12 @@ body {
   align-items: center;
   gap: 4px;
   font-size: 13px;
-  color: var(--gray-500);
+  color: #86909C;
 }
 
 .competition-summary {
   font-size: 14px;
-  color: var(--gray-700);
+  color: #4E5969;
   line-height: 1.7;
   margin-bottom: 16px;
 }
@@ -543,7 +514,7 @@ body {
 
 .deadline {
   font-size: 13px;
-  color: var(--danger);
+  color: #F53F3F;
 }
 
 .section-header {
@@ -556,14 +527,14 @@ body {
 .section-title {
   font-size: 16px;
   font-weight: 600;
-  color: var(--gray-900);
+  color: #1D2129;
 }
 
 .team-card {
   background: white;
-  border-radius: var(--radius);
+  border-radius: 4px;
   padding: 24px;
-  box-shadow: var(--shadow);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
   margin-bottom: 16px;
 }
 
@@ -577,7 +548,7 @@ body {
 .team-name {
   font-size: 16px;
   font-weight: 600;
-  color: var(--gray-900);
+  color: #1D2129;
   margin-bottom: 8px;
 }
 
@@ -591,22 +562,22 @@ body {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: var(--gray-200);
+  background: #E5E6EB;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 12px;
-  color: var(--gray-700);
+  color: #4E5969;
 }
 
 .member-avatar.leader {
-  background: var(--primary);
+  background: #2C68FF;
   color: white;
 }
 
 .team-desc {
   font-size: 14px;
-  color: var(--gray-700);
+  color: #4E5969;
   margin-bottom: 12px;
 }
 
@@ -619,16 +590,16 @@ body {
 .need-tag {
   padding: 4px 12px;
   background: rgba(255, 125, 0, 0.1);
-  color: var(--warning);
+  color: #FF7D00;
   border-radius: 12px;
   font-size: 12px;
 }
 
 .my-teams-section {
   background: white;
-  border-radius: var(--radius);
+  border-radius: 4px;
   padding: 24px;
-  box-shadow: var(--shadow);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
   margin-bottom: 24px;
 }
 
@@ -644,7 +615,7 @@ body {
 
 .empty-text {
   font-size: 14px;
-  color: var(--gray-500);
+  color: #86909C;
   margin-bottom: 16px;
 }
 
