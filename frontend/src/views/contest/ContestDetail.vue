@@ -40,38 +40,62 @@
 
         <div class="detail-body">
           <div class="main-section">
+            <!-- 赛事简介 - 使用 AI 生成的简洁说明 -->
             <div class="section">
               <h3 class="section-title">赛事简介</h3>
-              <p class="section-content">{{ contest.summary || contest.brief_description || '暂无简介' }}</p>
+              <p class="section-content">{{ contest.brief_description || contest.summary || '暂无简介' }}</p>
             </div>
 
-            <div class="section" v-if="contest.description">
-              <h3 class="section-title">详细说明</h3>
-              <div class="section-content" v-html="contest.description"></div>
+            <!-- 折叠区域：详细信息 -->
+            <div class="collapsible-section">
+              <div class="collapsible-header" @click="toggleSection('details')">
+                <span class="collapsible-title">📋 详细信息</span>
+                <span class="collapsible-icon">{{ expandedSections.details ? '−' : '+' }}</span>
+              </div>
+              <div v-if="expandedSections.details" class="collapsible-content">
+                <div class="info-grid">
+                  <div class="info-block" v-if="contest.eligibility_requirements">
+                    <h4>参赛资格</h4>
+                    <p>{{ contest.eligibility_requirements }}</p>
+                  </div>
+                  <div class="info-block" v-if="contest.participation_process">
+                    <h4>参赛流程</h4>
+                    <p>{{ contest.participation_process }}</p>
+                  </div>
+                  <div class="info-block" v-if="contest.awards_info">
+                    <h4>奖项信息</h4>
+                    <p>{{ contest.awards_info }}</p>
+                  </div>
+                  <div class="info-block" v-if="contest.recommendations">
+                    <h4>推荐建议</h4>
+                    <p>{{ contest.recommendations }}</p>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <div class="section" v-if="contest.eligibility_requirements">
-              <h3 class="section-title">参赛资格</h3>
-              <p class="section-content">{{ contest.eligibility_requirements }}</p>
+            <!-- 附件列表 -->
+            <div class="section" v-if="attachments && attachments.length > 0">
+              <h3 class="section-title">📎 赛事附件</h3>
+              <div class="attachments-list">
+                <a
+                  v-for="attachment in attachments"
+                  :key="attachment.id"
+                  :href="attachment.url"
+                  target="_blank"
+                  class="attachment-item"
+                >
+                  <span class="attachment-icon">{{ getFileIcon(attachment.file_type) }}</span>
+                  <span class="attachment-name">{{ attachment.name }}</span>
+                  <span class="attachment-size" v-if="attachment.file_size">{{ formatFileSize(attachment.file_size) }}</span>
+                  <span class="attachment-download">📥 下载</span>
+                </a>
+              </div>
             </div>
 
-            <div class="section" v-if="contest.participation_process">
-              <h3 class="section-title">参赛流程</h3>
-              <p class="section-content">{{ contest.participation_process }}</p>
-            </div>
-
-            <div class="section" v-if="contest.awards_info">
-              <h3 class="section-title">奖项信息</h3>
-              <p class="section-content">{{ contest.awards_info }}</p>
-            </div>
-
-            <div class="section" v-if="contest.recommendations">
-              <h3 class="section-title">推荐建议</h3>
-              <p class="section-content">{{ contest.recommendations }}</p>
-            </div>
-
+            <!-- 标签 -->
             <div class="section" v-if="contest.tags && contest.tags.length > 0">
-              <h3 class="section-title">赛事标签</h3>
+              <h3 class="section-title">🏷️ 赛事标签</h3>
               <div class="tags">
                 <span class="tag" v-for="tag in contest.tags" :key="tag">{{ tag }}</span>
               </div>
@@ -177,10 +201,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, reactive } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '@/store/modules/user'
-import { getContestDetail, getContestComments, createComment, likeComment as likeCommentApi } from '@/api/contest'
+import { getContestDetail, getContestAttachments, getContestComments, createComment, likeComment as likeCommentApi } from '@/api/contest'
 
 const router = useRouter()
 const route = useRoute()
@@ -191,12 +215,46 @@ const contest = ref(null)
 const comments = ref([])
 const commentsLoading = ref(false)
 const newComment = ref('')
+const attachments = ref([])
+
+const expandedSections = reactive({
+  details: false
+})
+
+const toggleSection = (section) => {
+  expandedSections[section] = !expandedSections[section]
+}
+
+const getFileIcon = (fileType) => {
+  const typeMap = {
+    'pdf': '📄',
+    'doc': '📝',
+    'docx': '📝',
+    'xls': '📊',
+    'xlsx': '📊',
+    'ppt': '📽️',
+    'pptx': '📽️',
+    'zip': '📦',
+    'rar': '📦',
+  }
+  return typeMap[fileType?.toLowerCase()] || '📎'
+}
+
+const formatFileSize = (bytes) => {
+  if (!bytes) return ''
+  if (bytes < 1024) return bytes + ' B'
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
+}
 
 const fetchContestDetail = async () => {
   loading.value = true
   try {
     const data = await getContestDetail(route.params.id)
     contest.value = data
+    // 获取附件
+    const attachData = await getContestAttachments(route.params.id)
+    attachments.value = attachData || []
   } catch (error) {
     console.error('获取赛事详情失败:', error)
   } finally {
@@ -438,6 +496,117 @@ onMounted(() => {
   line-height: 1.8;
 }
 
+.collapsible-section {
+  margin-bottom: 24px;
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.collapsible-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background: #F7F8FA;
+  cursor: pointer;
+  transition: background 0.25s ease;
+}
+
+.collapsible-header:hover {
+  background: #f0f2f5;
+}
+
+.collapsible-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1D2129;
+}
+
+.collapsible-icon {
+  font-size: 24px;
+  color: #86909C;
+  font-weight: 300;
+}
+
+.collapsible-content {
+  padding: 20px;
+}
+
+.info-grid {
+  display: grid;
+  gap: 20px;
+}
+
+.info-block {
+  padding: 16px;
+  background: #F7F8FA;
+  border-radius: 8px;
+}
+
+.info-block h4 {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1D2129;
+}
+
+.info-block p {
+  margin: 0;
+  font-size: 14px;
+  color: #4E5969;
+  line-height: 1.7;
+}
+
+.attachments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.attachment-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: #F7F8FA;
+  border-radius: 8px;
+  text-decoration: none;
+  transition: background 0.25s ease;
+}
+
+.attachment-item:hover {
+  background: #f0f2f5;
+}
+
+.attachment-icon {
+  font-size: 24px;
+}
+
+.attachment-name {
+  flex: 1;
+  font-size: 14px;
+  color: #1D2129;
+}
+
+.attachment-size {
+  font-size: 13px;
+  color: #86909C;
+}
+
+.attachment-download {
+  padding: 6px 12px;
+  background: rgba(44, 104, 255, 0.1);
+  color: #2C68FF;
+  border-radius: 4px;
+  font-size: 13px;
+  transition: background 0.25s ease;
+}
+
+.attachment-item:hover .attachment-download {
+  background: rgba(44, 104, 255, 0.15);
+}
+
 .tags {
   display: flex;
   gap: 8px;
@@ -528,6 +697,26 @@ onMounted(() => {
   line-height: 1.6;
 }
 
+.team-method-detail {
+  padding: 8px 0;
+}
+
+.method-item {
+  font-size: 14px;
+  color: #1D2129;
+  margin: 8px 0;
+  padding-left: 8px;
+}
+
+.method-hint {
+  font-size: 13px;
+  color: #86909C;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #f0f0f0;
+  line-height: 1.6;
+}
+
 .btn-primary {
   padding: 12px 32px;
   background: #2C68FF;
@@ -610,26 +799,6 @@ onMounted(() => {
   100% { transform: rotate(360deg); }
 }
 
-.team-method-detail {
-  padding: 8px 0;
-}
-
-.method-item {
-  font-size: 14px;
-  color: #1D2129;
-  margin: 8px 0;
-  padding-left: 8px;
-}
-
-.method-hint {
-  font-size: 13px;
-  color: #86909C;
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid #f0f0f0;
-  line-height: 1.6;
-}
-
 .comments-section {
   margin-top: 32px;
   padding-top: 32px;
@@ -669,7 +838,7 @@ onMounted(() => {
 
 .comment-item {
   display: flex;
-  gap: 16px;
+  gap: 12px;
   padding: 20px 0;
   border-bottom: 1px solid #f0f0f0;
 }
@@ -712,9 +881,9 @@ onMounted(() => {
 
 .comment-text {
   font-size: 14px;
-  color: #4E5969;
-  line-height: 1.7;
-  margin-bottom: 12px;
+  line-height: 1.6;
+  margin: 0 0 12px 0;
+  word-break: break-word;
 }
 
 .comment-footer {
@@ -745,9 +914,9 @@ onMounted(() => {
 }
 
 .empty-state.small p {
-  font-size: 14px;
-  color: #86909C;
   margin: 0;
+  color: #86909C;
+  font-size: 14px;
 }
 
 .loading-state.small {

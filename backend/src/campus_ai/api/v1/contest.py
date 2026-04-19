@@ -21,6 +21,7 @@ from ...schemas.contest import (
     ContestRecommendRequest,
     ContestCommentCreate, ContestCommentUpdate, ContestCommentResponse, ContestCommentListResponse,
     PrivateMessageCreate, PrivateMessageResponse, PrivateMessageListResponse, PrivateConversationResponse,
+    ContestAttachmentResponse,
 )
 from ...services.contest import (
     ContestStorageService, TeamStorageService,
@@ -74,6 +75,21 @@ def get_contest(
         )
     storage.increment_view_count(contest_id)
     return contest
+
+
+@router.get("/{contest_id}/attachments", response_model=List[ContestAttachmentResponse])
+def get_contest_attachments(
+    contest_id: str,
+    db: Session = Depends(get_db),
+):
+    """获取赛事附件列表"""
+    from ...models.contest import ContestAttachment
+
+    attachments = db.query(ContestAttachment).filter(
+        ContestAttachment.contest_id == contest_id
+    ).order_by(ContestAttachment.created_at.desc()).all()
+
+    return attachments
 
 
 @router.post("/", response_model=ContestResponse, status_code=status.HTTP_201_CREATED)

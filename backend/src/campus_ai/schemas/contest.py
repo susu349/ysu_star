@@ -166,6 +166,21 @@ class TeamTaskUpdate(BaseModel):
     completed: Optional[bool] = None
 
 
+# ============== 附件相关 ==============
+
+class ContestAttachmentResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    contest_id: str
+    name: str
+    url: str
+    file_type: Optional[str] = None
+    file_size: Optional[int] = None
+    is_downloaded: bool
+    created_at: datetime
+
+
 # ============== 用户标签相关 ==============
 
 class UserContestTagCreate(BaseModel):

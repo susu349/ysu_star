@@ -23,6 +23,13 @@ export function getContestDetail(contestId) {
   })
 }
 
+export function getContestAttachments(contestId) {
+  return request({
+    url: `/api/v1/contest/${contestId}/attachments`,
+    method: 'get'
+  })
+}
+
 export function getRecommendedContests(limit = 10) {
   return request({
     url: '/api/v1/contest/recommend/my',
