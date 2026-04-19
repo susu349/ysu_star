@@ -1,6 +1,8 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+import os
 from .core.config import get_settings
 from .core.database import engine, Base
 from .api.router import api_router
@@ -42,6 +44,16 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# 挂载地图瓦片静态文件服务
+TILES_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "map_tiles")
+os.makedirs(TILES_DIR, exist_ok=True)
+app.mount("/map-tiles", StaticFiles(directory=TILES_DIR), name="map_tiles")
+
+# 挂载上传文件服务
+UPLOADS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "uploads")
+os.makedirs(UPLOADS_DIR, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=UPLOADS_DIR), name="uploads")
 
 app.include_router(api_router)
 

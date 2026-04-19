@@ -25,6 +25,18 @@ from .contest import (
     TeamMemberRole,
     ApplicationStatus,
 )
+from .map import (
+    POI,
+    CheckIn,
+    POIComment,
+    CheckInComment,
+    CheckInLike,
+    UserFavoritePOI,
+    MapTopic,
+    POIType,
+    POIStatus,
+    CheckInVisibility,
+)
 
 __all__ = [
     "User",
@@ -50,4 +62,14 @@ __all__ = [
     "TeamStatus",
     "TeamMemberRole",
     "ApplicationStatus",
+    "POI",
+    "CheckIn",
+    "POIComment",
+    "CheckInComment",
+    "CheckInLike",
+    "UserFavoritePOI",
+    "MapTopic",
+    "POIType",
+    "POIStatus",
+    "CheckInVisibility",
 ]
