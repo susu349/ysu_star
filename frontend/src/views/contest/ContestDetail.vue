@@ -58,7 +58,7 @@
             </div>
 
             <!-- 折叠区域：详细信息 -->
-            <div class="section">
+            <div class="section" v-if="hasDetailedInfo">
               <div class="collapsible-header" @click="showDetails = !showDetails">
                 <span class="collapsible-title">📋 详细信息</span>
                 <span class="collapsible-icon">{{ showDetails ? '−' : '+' }}</span>
@@ -99,6 +99,14 @@
                   <span class="attachment-size" v-if="attachment.file_size">{{ formatFileSize(attachment.file_size) }}</span>
                   <span class="attachment-download">📥 下载</span>
                 </a>
+              </div>
+            </div>
+
+            <!-- 无数据提示 -->
+            <div v-if="!hasDetailedInfo && (!attachments || attachments.length === 0) && !contest.description" class="section empty-tip">
+              <div class="empty-tip-content">
+                <span class="empty-tip-icon">📝</span>
+                <p class="empty-tip-text">AI 正在处理该赛事的详细信息，请稍后查看或刷新页面</p>
               </div>
             </div>
 
@@ -210,7 +218,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '@/store/modules/user'
 import { getContestDetail, getContestAttachments, getContestComments, createComment, likeComment as likeCommentApi } from '@/api/contest'
@@ -227,6 +235,15 @@ const newComment = ref('')
 const attachments = ref([])
 const showDetails = ref(false)
 const showOriginal = ref(false)
+
+const hasDetailedInfo = computed(() => {
+  return contest.value && (
+    contest.value.eligibility_requirements ||
+    contest.value.participation_process ||
+    contest.value.awards_info ||
+    contest.value.recommendations
+  )
+})
 
 const getFileIcon = (fileType) => {
   const typeMap = {
@@ -869,6 +886,30 @@ onMounted(() => {
 
 .mt-3 {
   margin-top: 12px;
+}
+
+.empty-tip {
+  padding: 32px;
+  text-align: center;
+  background: #F7F8FA;
+  border-radius: 12px;
+}
+
+.empty-tip-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.empty-tip-icon {
+  font-size: 48px;
+}
+
+.empty-tip-text {
+  font-size: 14px;
+  color: #86909C;
+  margin: 0;
 }
 
 .empty-state {
