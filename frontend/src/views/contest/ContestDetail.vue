@@ -46,30 +46,39 @@
               <p class="section-content">{{ contest.brief_description || contest.summary || '暂无简介' }}</p>
             </div>
 
-            <!-- 折叠区域：详细信息 -->
-            <div class="collapsible-section">
-              <div class="collapsible-header" @click="toggleSection('details')">
-                <span class="collapsible-title">📋 详细信息</span>
-                <span class="collapsible-icon">{{ expandedSections.details ? '−' : '+' }}</span>
+            <!-- 官网原始内容（精简版） -->
+            <div class="section" v-if="contest.description">
+              <div class="collapsible-header" @click="showOriginal = !showOriginal">
+                <span class="collapsible-title">📄 官网原始内容</span>
+                <span class="collapsible-icon">{{ showOriginal ? '−' : '+' }}</span>
               </div>
-              <div v-if="expandedSections.details" class="collapsible-content">
-                <div class="info-grid">
-                  <div class="info-block" v-if="contest.eligibility_requirements">
-                    <h4>参赛资格</h4>
-                    <p>{{ contest.eligibility_requirements }}</p>
-                  </div>
-                  <div class="info-block" v-if="contest.participation_process">
-                    <h4>参赛流程</h4>
-                    <p>{{ contest.participation_process }}</p>
-                  </div>
-                  <div class="info-block" v-if="contest.awards_info">
-                    <h4>奖项信息</h4>
-                    <p>{{ contest.awards_info }}</p>
-                  </div>
-                  <div class="info-block" v-if="contest.recommendations">
-                    <h4>推荐建议</h4>
-                    <p>{{ contest.recommendations }}</p>
-                  </div>
+              <div v-if="showOriginal" class="original-content">
+                <div class="section-content" v-html="contest.description"></div>
+              </div>
+            </div>
+
+            <!-- 折叠区域：详细信息 -->
+            <div class="section">
+              <div class="collapsible-header" @click="showDetails = !showDetails">
+                <span class="collapsible-title">📋 详细信息</span>
+                <span class="collapsible-icon">{{ showDetails ? '−' : '+' }}</span>
+              </div>
+              <div v-if="showDetails" class="info-grid">
+                <div class="info-block" v-if="contest.eligibility_requirements">
+                  <h4>参赛资格</h4>
+                  <p>{{ contest.eligibility_requirements }}</p>
+                </div>
+                <div class="info-block" v-if="contest.participation_process">
+                  <h4>参赛流程</h4>
+                  <p>{{ contest.participation_process }}</p>
+                </div>
+                <div class="info-block" v-if="contest.awards_info">
+                  <h4>奖项信息</h4>
+                  <p>{{ contest.awards_info }}</p>
+                </div>
+                <div class="info-block" v-if="contest.recommendations">
+                  <h4>推荐建议</h4>
+                  <p>{{ contest.recommendations }}</p>
                 </div>
               </div>
             </div>
@@ -98,6 +107,54 @@
               <h3 class="section-title">🏷️ 赛事标签</h3>
               <div class="tags">
                 <span class="tag" v-for="tag in contest.tags" :key="tag">{{ tag }}</span>
+              </div>
+            </div>
+
+            <!-- 评论区 -->
+            <div class="section comments-section">
+              <h3 class="section-title">💬 赛事评论</h3>
+
+              <!-- 发表评论 -->
+              <div class="comment-input-wrapper">
+                <textarea
+                  v-model="newComment"
+                  class="comment-input"
+                  placeholder="说说你的看法..."
+                  rows="3"
+                ></textarea>
+                <div class="comment-actions">
+                  <button class="btn-primary" @click="submitComment" :disabled="!newComment.trim()">发表评论</button>
+                </div>
+              </div>
+
+              <!-- 评论列表 -->
+              <div class="comments-list">
+                <div v-if="commentsLoading" class="loading-state small">
+                  <div class="loading-spinner small"></div>
+                </div>
+
+                <div v-else-if="comments.length === 0" class="empty-state small">
+                  <p>暂无评论，来抢沙发吧！</p>
+                </div>
+
+                <div v-else class="comment-item" v-for="comment in comments" :key="comment.id">
+                  <div class="comment-avatar">
+                    {{ comment.user_id?.charAt(0)?.toUpperCase() || '?' }}
+                  </div>
+                  <div class="comment-content-wrapper">
+                    <div class="comment-header">
+                      <span class="comment-user">用户 {{ comment.user_id?.slice(0, 8) }}</span>
+                      <span class="comment-time">{{ formatDate(comment.created_at) }}</span>
+                    </div>
+                    <p class="comment-text">{{ comment.content }}</p>
+                    <div class="comment-footer">
+                      <button class="like-btn" @click="likeComment(comment.id)">
+                        👍 {{ comment.like_count || 0 }}
+                      </button>
+                      <button class="reply-btn" @click="replyToComment(comment)">回复</button>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -147,61 +204,13 @@
             </div>
           </div>
         </div>
-
-        <!-- 评论区 -->
-        <div class="comments-section">
-          <h3 class="section-title">💬 赛事评论</h3>
-
-          <!-- 发表评论 -->
-          <div class="comment-input-wrapper">
-            <textarea
-              v-model="newComment"
-              class="comment-input"
-              placeholder="说说你的看法..."
-              rows="3"
-            ></textarea>
-            <div class="comment-actions">
-              <button class="btn-primary" @click="submitComment" :disabled="!newComment.trim()">发表评论</button>
-            </div>
-          </div>
-
-          <!-- 评论列表 -->
-          <div class="comments-list">
-            <div v-if="commentsLoading" class="loading-state small">
-              <div class="loading-spinner small"></div>
-            </div>
-
-            <div v-else-if="comments.length === 0" class="empty-state small">
-              <p>暂无评论，来抢沙发吧！</p>
-            </div>
-
-            <div v-else class="comment-item" v-for="comment in comments" :key="comment.id">
-              <div class="comment-avatar">
-                {{ comment.user_id?.charAt(0)?.toUpperCase() || '?' }}
-              </div>
-              <div class="comment-content-wrapper">
-                <div class="comment-header">
-                  <span class="comment-user">用户 {{ comment.user_id?.slice(0, 8) }}</span>
-                  <span class="comment-time">{{ formatDate(comment.created_at) }}</span>
-                </div>
-                <p class="comment-text">{{ comment.content }}</p>
-                <div class="comment-footer">
-                  <button class="like-btn" @click="likeComment(comment.id)">
-                    👍 {{ comment.like_count || 0 }}
-                  </button>
-                  <button class="reply-btn" @click="replyToComment(comment)">回复</button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, reactive } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '@/store/modules/user'
 import { getContestDetail, getContestAttachments, getContestComments, createComment, likeComment as likeCommentApi } from '@/api/contest'
@@ -216,14 +225,8 @@ const comments = ref([])
 const commentsLoading = ref(false)
 const newComment = ref('')
 const attachments = ref([])
-
-const expandedSections = reactive({
-  details: false
-})
-
-const toggleSection = (section) => {
-  expandedSections[section] = !expandedSections[section]
-}
+const showDetails = ref(false)
+const showOriginal = ref(false)
 
 const getFileIcon = (fileType) => {
   const typeMap = {
@@ -252,7 +255,6 @@ const fetchContestDetail = async () => {
   try {
     const data = await getContestDetail(route.params.id)
     contest.value = data
-    // 获取附件
     const attachData = await getContestAttachments(route.params.id)
     attachments.value = attachData || []
   } catch (error) {
@@ -496,25 +498,20 @@ onMounted(() => {
   line-height: 1.8;
 }
 
-.collapsible-section {
-  margin-bottom: 24px;
-  border: 1px solid #f0f0f0;
-  border-radius: 8px;
-  overflow: hidden;
-}
-
 .collapsible-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px 20px;
-  background: #F7F8FA;
+  padding: 16px 0;
   cursor: pointer;
+  border-top: 1px solid #f0f0f0;
   transition: background 0.25s ease;
 }
 
 .collapsible-header:hover {
-  background: #f0f2f5;
+  background: #F7F8FA;
+  margin: 0 -40px;
+  padding: 16px 40px;
 }
 
 .collapsible-title {
@@ -529,13 +526,10 @@ onMounted(() => {
   font-weight: 300;
 }
 
-.collapsible-content {
-  padding: 20px;
-}
-
 .info-grid {
   display: grid;
   gap: 20px;
+  padding: 20px 0;
 }
 
 .info-block {
@@ -556,6 +550,10 @@ onMounted(() => {
   font-size: 14px;
   color: #4E5969;
   line-height: 1.7;
+}
+
+.original-content {
+  padding: 20px 0;
 }
 
 .attachments-list {
@@ -618,7 +616,7 @@ onMounted(() => {
   padding: 4px 12px;
   background: #F7F8FA;
   border-radius: 12px;
-  font-size: 13px;
+  font-size: 12px;
   color: #4E5969;
 }
 
@@ -635,6 +633,116 @@ onMounted(() => {
 .tag-warning {
   background: rgba(255, 125, 0, 0.1);
   color: #FF7D00;
+}
+
+.comments-section {
+  margin-top: 32px;
+  padding-top: 32px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.comment-input-wrapper {
+  margin-bottom: 24px;
+}
+
+.comment-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid #E5E6EB;
+  border-radius: 8px;
+  font-size: 14px;
+  resize: vertical;
+  min-height: 80px;
+  outline: none;
+  transition: border-color 0.3s;
+  box-sizing: border-box;
+}
+
+.comment-input:focus {
+  border-color: #2C68FF;
+}
+
+.comment-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+
+.comments-list {
+  margin-top: 24px;
+}
+
+.comment-item {
+  display: flex;
+  gap: 12px;
+  padding: 20px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.comment-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.comment-content-wrapper {
+  flex: 1;
+}
+
+.comment-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.comment-user {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1D2129;
+}
+
+.comment-time {
+  font-size: 13px;
+  color: #86909C;
+}
+
+.comment-text {
+  font-size: 14px;
+  line-height: 1.6;
+  margin: 0 0 12px 0;
+  word-break: break-word;
+}
+
+.comment-footer {
+  display: flex;
+  gap: 16px;
+}
+
+.like-btn,
+.reply-btn {
+  padding: 4px 12px;
+  background: none;
+  border: none;
+  color: #86909C;
+  font-size: 13px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.25s ease;
+}
+
+.like-btn:hover,
+.reply-btn:hover {
+  color: #2C68FF;
+  background: rgba(44, 104, 255, 0.05);
 }
 
 .side-section {
@@ -791,122 +899,7 @@ onMounted(() => {
   border-top: 4px solid #667eea;
   border-radius: 50%;
   animation: spin 1s linear infinite;
-  margin: 0 auto 20px;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-.comments-section {
-  margin-top: 32px;
-  padding-top: 32px;
-  border-top: 1px solid #f0f0f0;
-}
-
-.comment-input-wrapper {
-  margin-bottom: 24px;
-}
-
-.comment-input {
-  width: 100%;
-  padding: 12px 16px;
-  border: 1px solid #E5E6EB;
-  border-radius: 8px;
-  font-size: 14px;
-  resize: vertical;
-  min-height: 80px;
-  outline: none;
-  transition: border-color 0.3s;
-  box-sizing: border-box;
-}
-
-.comment-input:focus {
-  border-color: #2C68FF;
-}
-
-.comment-actions {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 12px;
-}
-
-.comments-list {
-  margin-top: 24px;
-}
-
-.comment-item {
-  display: flex;
-  gap: 12px;
-  padding: 20px 0;
-  border-bottom: 1px solid #f0f0f0;
-}
-
-.comment-avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 16px;
-  font-weight: 600;
-  flex-shrink: 0;
-}
-
-.comment-content-wrapper {
-  flex: 1;
-}
-
-.comment-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 8px;
-}
-
-.comment-user {
-  font-size: 14px;
-  font-weight: 600;
-  color: #1D2129;
-}
-
-.comment-time {
-  font-size: 13px;
-  color: #86909C;
-}
-
-.comment-text {
-  font-size: 14px;
-  line-height: 1.6;
-  margin: 0 0 12px 0;
-  word-break: break-word;
-}
-
-.comment-footer {
-  display: flex;
-  gap: 16px;
-}
-
-.like-btn,
-.reply-btn {
-  padding: 4px 12px;
-  background: none;
-  border: none;
-  color: #86909C;
-  font-size: 13px;
-  cursor: pointer;
-  border-radius: 4px;
-  transition: all 0.25s ease;
-}
-
-.like-btn:hover,
-.reply-btn:hover {
-  color: #2C68FF;
-  background: rgba(44, 104, 255, 0.05);
+  margin: 0 auto 16px;
 }
 
 .empty-state.small {
@@ -928,5 +921,10 @@ onMounted(() => {
   height: 24px;
   border-width: 3px;
   margin: 0 auto;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 </style>
