@@ -42,7 +42,33 @@
         <main>
           <!-- 赛事推荐 -->
           <div v-if="activeTab === 'recommend'">
-            <div class="section-header" style="margin-bottom: 20px;">
+            <!-- 搜索和排序 -->
+            <div class="search-bar">
+              <div class="search-input-wrapper">
+                <input
+                  v-model="searchQuery"
+                  type="text"
+                  placeholder="搜索赛事名称、主办方..."
+                  class="search-input"
+                  @keyup.enter="handleSearch"
+                />
+                <button class="btn btn-primary search-btn" @click="handleSearch">搜索</button>
+              </div>
+              <div class="sort-group">
+                <span class="sort-label">排序:</span>
+                <select v-model="sortBy" class="sort-select" @change="handleSort">
+                  <option value="source_url">最新发布 (URL)</option>
+                  <option value="registration_end">报名截止</option>
+                  <option value="created_at">创建时间</option>
+                  <option value="title">名称</option>
+                </select>
+                <button class="btn btn-outline" @click="toggleSortOrder">
+                  {{ sortOrder === 'desc' ? '↓' : '↑' }}
+                </button>
+              </div>
+            </div>
+
+            <div class="section-header" style="margin-bottom: 20px; margin-top: 20px;">
               <h3 class="section-title">为你推荐的赛事</h3>
               <button class="btn btn-primary" @click="fetchCompetitions">刷新数据</button>
             </div>
@@ -57,28 +83,58 @@
               <div class="empty-text">暂无赛事数据</div>
             </div>
 
-            <div v-else class="competition-card" v-for="competition in displayCompetitions" :key="competition.id" @click="goToDetail(competition.id)">
-              <div class="competition-header">
-                <div>
-                  <h3 class="competition-title">{{ competition.title }}</h3>
-                  <div class="competition-meta">
-                    <span class="tag" :class="getLevelTagClass(competition.level)">{{ getLevelText(competition.level) }}</span>
-                    <span class="meta-item" v-if="competition.organizer">🏠 {{ competition.organizer }}</span>
-                    <span class="meta-item" v-if="competition.category">📂 {{ competition.category }}</span>
-                    <span class="meta-item">👥 {{ competition.team_count || 0 }} 支队伍</span>
+            <div v-else>
+              <!-- 最近两个月赛事 -->
+              <div v-if="recentCompetitions.length > 0">
+                <h4 class="section-subtitle">🆕 近两个月发布</h4>
+                <div class="competition-card" v-for="competition in recentCompetitions" :key="competition.id" @click="goToDetail(competition.id)">
+                  <div class="competition-header">
+                    <div>
+                      <h3 class="competition-title">{{ competition.title }}</h3>
+                      <div class="competition-meta">
+                        <span class="tag" :class="getLevelTagClass(competition.level)">{{ getLevelText(competition.level) }}</span>
+                        <span class="meta-item" v-if="competition.organizer">🏠 {{ competition.organizer }}</span>
+                        <span class="meta-item" v-if="competition.category">📂 {{ competition.category }}</span>
+                        <span class="meta-item">👥 {{ competition.team_count || 0 }} 支队伍</span>
+                      </div>
+                    </div>
+                    <button class="btn btn-primary" @click.stop>立即报名</button>
+                  </div>
+                  <p class="competition-summary">{{ competition.summary || competition.brief_description || '暂无简介' }}</p>
+                  <div class="team-method-section">
+                    <span class="team-method-label">👥 结队方式：</span>
+                    <span class="team-method-text">{{ getTeamMethod(competition) }}</span>
+                  </div>
+                  <div class="competition-footer">
+                    <div class="competition-meta">
+                      <span class="meta-item" v-if="competition.registration_end">📅 报名截止：{{ formatDate(competition.registration_end) }}</span>
+                      <span class="meta-item" v-if="competition.contest_start">🎯 比赛时间：{{ formatDate(competition.contest_start) }}</span>
+                    </div>
+                    <span class="deadline" v-if="getDaysLeft(competition.registration_end) <= 30 && getDaysLeft(competition.registration_end) > 0">⚠️ 还剩 {{ getDaysLeft(competition.registration_end) }} 天截止</span>
+                    <span class="meta-item" v-else-if="getDaysLeft(competition.registration_end) > 30">还剩 {{ getDaysLeft(competition.registration_end) }} 天</span>
+                    <span class="deadline" v-else>已截止</span>
                   </div>
                 </div>
-                <button class="btn btn-primary" @click.stop>立即报名</button>
               </div>
-              <p class="competition-summary">{{ competition.summary || competition.brief_description || '暂无简介' }}</p>
-              <div class="competition-footer">
-                <div class="competition-meta">
-                  <span class="meta-item" v-if="competition.registration_end">📅 报名截止：{{ formatDate(competition.registration_end) }}</span>
-                  <span class="meta-item" v-if="competition.contest_start">🎯 比赛时间：{{ formatDate(competition.contest_start) }}</span>
+
+              <!-- 往届赛事 -->
+              <div v-if="pastCompetitions.length > 0" style="margin-top: 32px;">
+                <h4 class="section-subtitle">📚 往届赛事</h4>
+                <div class="competition-card past" v-for="competition in pastCompetitions" :key="competition.id" @click="goToDetail(competition.id)">
+                  <div class="competition-header">
+                    <div>
+                      <h3 class="competition-title">{{ competition.title }}</h3>
+                      <div class="competition-meta">
+                        <span class="tag" :class="getLevelTagClass(competition.level)">{{ getLevelText(competition.level) }}</span>
+                        <span class="meta-item" v-if="competition.organizer">🏠 {{ competition.organizer }}</span>
+                        <span class="meta-item" v-if="competition.category">📂 {{ competition.category }}</span>
+                        <span class="meta-item">📅 发布于：{{ formatDate(competition.created_at) }}</span>
+                      </div>
+                    </div>
+                    <button class="btn btn-outline" @click.stop>查看详情</button>
+                  </div>
+                  <p class="competition-summary">{{ competition.summary || competition.brief_description || '暂无简介' }}</p>
                 </div>
-                <span class="deadline" v-if="getDaysLeft(competition.registration_end) <= 30 && getDaysLeft(competition.registration_end) > 0">⚠️ 还剩 {{ getDaysLeft(competition.registration_end) }} 天截止</span>
-                <span class="meta-item" v-else-if="getDaysLeft(competition.registration_end) > 30">还剩 {{ getDaysLeft(competition.registration_end) }} 天</span>
-                <span class="deadline" v-else>已截止</span>
               </div>
             </div>
           </div>
@@ -119,7 +175,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/store/modules/user'
-import axios from 'axios'
+import { getContestList } from '@/api/contest'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -128,19 +184,36 @@ const activeTab = ref('recommend')
 const loading = ref(false)
 const competitions = ref([])
 const selectedLevel = ref(null)
+const searchQuery = ref('')
+const sortBy = ref('source_url')
+const sortOrder = ref('desc')
 
 // 计算属性
 const totalCount = computed(() => competitions.value.length)
-const nationalCount = computed(() => competitions.value.filter(c => c.level?.toUpperCase() === 'NATIONAL').length)
-const provincialCount = computed(() => competitions.value.filter(c => c.level?.toUpperCase() === 'PROVINCIAL').length)
+const nationalCount = computed(() => competitions.value.filter(c => c.level?.toUpperCase() === 'NATIONAL' || c.level?.toUpperCase() === 'INTERNATIONAL').length)
+const provincialCount = computed(() => competitions.value.filter(c => c.level?.toUpperCase() === 'PROVINCIAL' || c.level?.toUpperCase() === 'PROVINCE').length)
 const schoolCount = computed(() => competitions.value.filter(c => c.level?.toUpperCase() === 'SCHOOL').length)
 
 const displayCompetitions = computed(() => {
   let result = [...competitions.value]
   if (selectedLevel.value) {
-    result = result.filter(c => c.level?.toUpperCase() === selectedLevel.value)
+    result = result.filter(c => {
+      const level = c.level?.toUpperCase()
+      if (selectedLevel.value === 'PROVINCIAL') {
+        return level === 'PROVINCIAL' || level === 'PROVINCE'
+      }
+      return level === selectedLevel.value
+    })
   }
   return result
+})
+
+const recentCompetitions = computed(() => {
+  return displayCompetitions.value.filter(c => isRecent(c))
+})
+
+const pastCompetitions = computed(() => {
+  return displayCompetitions.value.filter(c => !isRecent(c))
 })
 
 // 方法
@@ -152,19 +225,61 @@ const setLevel = (level) => {
   selectedLevel.value = level
 }
 
+const handleSearch = () => {
+  fetchCompetitions()
+}
+
+const handleSort = () => {
+  fetchCompetitions()
+}
+
+const toggleSortOrder = () => {
+  sortOrder.value = sortOrder.value === 'desc' ? 'asc' : 'desc'
+  fetchCompetitions()
+}
+
 const fetchCompetitions = async () => {
   loading.value = true
   try {
-    console.log('开始调用 API...')
-    const response = await axios.get('http://localhost:8000/api/v1/contest/list?limit=500')
+    console.log('开始调用 API (使用直接 fetch)...')
+    let url = `http://localhost:8000/api/v1/contest/list?limit=500&order_by=${sortBy.value}&order_dir=${sortOrder.value}`
+    if (searchQuery.value) {
+      url += `&search=${encodeURIComponent(searchQuery.value)}`
+    }
+    const res = await fetch(url)
+    const response = await res.json()
     console.log('API 返回:', response)
-    competitions.value = response.data.items || response.data || []
-    console.log('competitions.value:', competitions.value)
+    console.log('response.items:', response?.items)
+
+    if (response && response.items && Array.isArray(response.items)) {
+      competitions.value = response.items
+    } else {
+      console.error('无法解析响应数据')
+      competitions.value = []
+    }
+
+    console.log('最终 competitions.value:', competitions.value)
+    console.log('competitions.value 长度:', competitions.value?.length)
   } catch (error) {
     console.error('获取赛事列表失败:', error)
+    alert('获取赛事列表失败: ' + (error.message || '未知错误'))
   } finally {
     loading.value = false
   }
+}
+
+// 判断是否是近两个月的赛事
+const isRecent = (contest) => {
+  if (!contest.created_at) return false
+  const created = new Date(contest.created_at)
+  const now = new Date()
+  const diffDays = (now - created) / (1000 * 60 * 60 * 24)
+  return diffDays <= 60 // 近两个月
+}
+
+// 结队方式描述
+const getTeamMethod = (contest) => {
+  return contest.team_method || '加入已有队伍 / 创建新队伍'
 }
 
 const formatDate = (dateStr) => {
@@ -185,7 +300,9 @@ const getLevelText = (level) => {
   const levelUpper = level?.toUpperCase()
   const map = {
     'NATIONAL': '国家级',
+    'INTERNATIONAL': '国际级',
     'PROVINCIAL': '省级',
+    'PROVINCE': '省级',
     'SCHOOL': '校级'
   }
   return map[levelUpper] || level || '未知'
@@ -195,7 +312,9 @@ const getLevelTagClass = (level) => {
   const levelUpper = level?.toUpperCase()
   const map = {
     'NATIONAL': 'tag-warning',
+    'INTERNATIONAL': 'tag-warning',
     'PROVINCIAL': 'tag-primary',
+    'PROVINCE': 'tag-primary',
     'SCHOOL': 'tag-success'
   }
   return map[levelUpper] || ''
@@ -638,5 +757,101 @@ onMounted(() => {
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
+}
+
+.search-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 8px;
+}
+
+.search-input-wrapper {
+  display: flex;
+  gap: 12px;
+  flex: 1;
+}
+
+.search-input {
+  flex: 1;
+  padding: 12px 16px;
+  border: 1px solid #E5E6EB;
+  border-radius: 8px;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.3s;
+}
+
+.search-input:focus {
+  border-color: #2C68FF;
+}
+
+.search-btn {
+  white-space: nowrap;
+}
+
+.sort-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sort-label {
+  font-size: 14px;
+  color: #4E5969;
+}
+
+.sort-select {
+  padding: 8px 12px;
+  border: 1px solid #E5E6EB;
+  border-radius: 6px;
+  font-size: 14px;
+  outline: none;
+  cursor: pointer;
+  background: white;
+}
+
+.sort-select:focus {
+  border-color: #2C68FF;
+}
+
+.section-subtitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1D2129;
+  margin: 0 0 16px 0;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #2C68FF;
+  display: inline-block;
+}
+
+.team-method-section {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: #F7F8FA;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.team-method-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #4E5969;
+}
+
+.team-method-text {
+  font-size: 13px;
+  color: #1D2129;
+}
+
+.competition-card.past {
+  opacity: 0.85;
+  background: linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%);
+}
+
+.competition-card.past:hover {
+  opacity: 1;
 }
 </style>

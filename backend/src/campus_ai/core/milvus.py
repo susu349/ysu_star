@@ -61,7 +61,7 @@ class MilvusClient:
                 dim=dimension,
             ),
             FieldSchema(
-                name="metadata",
+                name="meta",
                 dtype=DataType.JSON,
             ),
         ]
@@ -98,7 +98,7 @@ class MilvusClient:
         self,
         collection_name: str,
         embeddings: List[List[float]],
-        metadata_list: List[Dict[str, Any]],
+        meta_list: List[Dict[str, Any]],
     ) -> List[int]:
         collection = self.get_collection(collection_name)
         if collection is None:
@@ -108,7 +108,7 @@ class MilvusClient:
             )
 
         collection.load()
-        data = [embeddings, metadata_list]
+        data = [embeddings, meta_list]
         result = collection.insert(data)
         collection.flush()
         return result.primary_keys
@@ -133,7 +133,7 @@ class MilvusClient:
             param=search_params,
             limit=top_k,
             expr=filter_expr,
-            output_fields=["metadata"],
+            output_fields=["meta"],
         )
 
         output = []
@@ -142,7 +142,7 @@ class MilvusClient:
                 output.append({
                     "id": hit.id,
                     "score": hit.score,
-                    "metadata": hit.entity.get("metadata"),
+                    "meta": hit.entity.get("meta"),
                 })
         return output
 

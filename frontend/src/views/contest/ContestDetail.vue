@@ -108,9 +108,66 @@
             </div>
 
             <div class="info-card">
+              <h3 class="card-title">结队方式</h3>
+              <div class="team-method-detail">
+                <p class="method-item">✅ 加入已有队伍</p>
+                <p class="method-item">✅ 创建新队伍</p>
+                <p class="method-hint">建议：先浏览赛事详情，再选择合适的队伍加入或创建新队伍</p>
+              </div>
+            </div>
+
+            <div class="info-card">
               <h3 class="card-title">快捷操作</h3>
               <button class="btn-primary block">立即报名</button>
               <button class="btn-outline block mt-3">寻找队友</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 评论区 -->
+        <div class="comments-section">
+          <h3 class="section-title">💬 赛事评论</h3>
+
+          <!-- 发表评论 -->
+          <div class="comment-input-wrapper">
+            <textarea
+              v-model="newComment"
+              class="comment-input"
+              placeholder="说说你的看法..."
+              rows="3"
+            ></textarea>
+            <div class="comment-actions">
+              <button class="btn-primary" @click="submitComment" :disabled="!newComment.trim()">发表评论</button>
+            </div>
+          </div>
+
+          <!-- 评论列表 -->
+          <div class="comments-list">
+            <div v-if="commentsLoading" class="loading-state small">
+              <div class="loading-spinner small"></div>
+            </div>
+
+            <div v-else-if="comments.length === 0" class="empty-state small">
+              <p>暂无评论，来抢沙发吧！</p>
+            </div>
+
+            <div v-else class="comment-item" v-for="comment in comments" :key="comment.id">
+              <div class="comment-avatar">
+                {{ comment.user_id?.charAt(0)?.toUpperCase() || '?' }}
+              </div>
+              <div class="comment-content-wrapper">
+                <div class="comment-header">
+                  <span class="comment-user">用户 {{ comment.user_id?.slice(0, 8) }}</span>
+                  <span class="comment-time">{{ formatDate(comment.created_at) }}</span>
+                </div>
+                <p class="comment-text">{{ comment.content }}</p>
+                <div class="comment-footer">
+                  <button class="like-btn" @click="likeComment(comment.id)">
+                    👍 {{ comment.like_count || 0 }}
+                  </button>
+                  <button class="reply-btn" @click="replyToComment(comment)">回复</button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -123,7 +180,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '@/store/modules/user'
-import { getContestDetail } from '@/api/contest'
+import { getContestDetail, getContestComments, createComment, likeComment as likeCommentApi } from '@/api/contest'
 
 const router = useRouter()
 const route = useRoute()
@@ -131,6 +188,9 @@ const userStore = useUserStore()
 
 const loading = ref(false)
 const contest = ref(null)
+const comments = ref([])
+const commentsLoading = ref(false)
+const newComment = ref('')
 
 const fetchContestDetail = async () => {
   loading.value = true
@@ -162,7 +222,9 @@ const getLevelText = (level) => {
   const levelUpper = level?.toUpperCase()
   const map = {
     'NATIONAL': '国家级',
+    'INTERNATIONAL': '国际级',
     'PROVINCIAL': '省级',
+    'PROVINCE': '省级',
     'SCHOOL': '校级'
   }
   return map[levelUpper] || level || '未知'
@@ -172,7 +234,9 @@ const getLevelTagClass = (level) => {
   const levelUpper = level?.toUpperCase()
   const map = {
     'NATIONAL': 'tag-warning',
+    'INTERNATIONAL': 'tag-warning',
     'PROVINCIAL': 'tag-primary',
+    'PROVINCE': 'tag-primary',
     'SCHOOL': 'tag-success'
   }
   return map[levelUpper] || ''
@@ -193,8 +257,49 @@ const handleLogout = async () => {
   }
 }
 
+const fetchComments = async () => {
+  commentsLoading.value = true
+  try {
+    const data = await getContestComments(route.params.id, { limit: 100 })
+    comments.value = data.items || data || []
+  } catch (error) {
+    console.error('获取评论失败:', error)
+  } finally {
+    commentsLoading.value = false
+  }
+}
+
+const submitComment = async () => {
+  if (!newComment.value.trim()) return
+  try {
+    await createComment({
+      contest_id: route.params.id,
+      content: newComment.value
+    })
+    newComment.value = ''
+    await fetchComments()
+  } catch (error) {
+    console.error('发表评论失败:', error)
+    alert('发表评论失败')
+  }
+}
+
+const likeComment = async (commentId) => {
+  try {
+    await likeCommentApi(commentId)
+    await fetchComments()
+  } catch (error) {
+    console.error('点赞失败:', error)
+  }
+}
+
+const replyToComment = (comment) => {
+  alert('回复功能开发中...')
+}
+
 onMounted(() => {
   fetchContestDetail()
+  fetchComments()
 })
 </script>
 
@@ -503,5 +608,156 @@ onMounted(() => {
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
+}
+
+.team-method-detail {
+  padding: 8px 0;
+}
+
+.method-item {
+  font-size: 14px;
+  color: #1D2129;
+  margin: 8px 0;
+  padding-left: 8px;
+}
+
+.method-hint {
+  font-size: 13px;
+  color: #86909C;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #f0f0f0;
+  line-height: 1.6;
+}
+
+.comments-section {
+  margin-top: 32px;
+  padding-top: 32px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.comment-input-wrapper {
+  margin-bottom: 24px;
+}
+
+.comment-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid #E5E6EB;
+  border-radius: 8px;
+  font-size: 14px;
+  resize: vertical;
+  min-height: 80px;
+  outline: none;
+  transition: border-color 0.3s;
+  box-sizing: border-box;
+}
+
+.comment-input:focus {
+  border-color: #2C68FF;
+}
+
+.comment-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+
+.comments-list {
+  margin-top: 24px;
+}
+
+.comment-item {
+  display: flex;
+  gap: 16px;
+  padding: 20px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.comment-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.comment-content-wrapper {
+  flex: 1;
+}
+
+.comment-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.comment-user {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1D2129;
+}
+
+.comment-time {
+  font-size: 13px;
+  color: #86909C;
+}
+
+.comment-text {
+  font-size: 14px;
+  color: #4E5969;
+  line-height: 1.7;
+  margin-bottom: 12px;
+}
+
+.comment-footer {
+  display: flex;
+  gap: 16px;
+}
+
+.like-btn,
+.reply-btn {
+  padding: 4px 12px;
+  background: none;
+  border: none;
+  color: #86909C;
+  font-size: 13px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.25s ease;
+}
+
+.like-btn:hover,
+.reply-btn:hover {
+  color: #2C68FF;
+  background: rgba(44, 104, 255, 0.05);
+}
+
+.empty-state.small {
+  padding: 40px 20px;
+}
+
+.empty-state.small p {
+  font-size: 14px;
+  color: #86909C;
+  margin: 0;
+}
+
+.loading-state.small {
+  padding: 40px 20px;
+}
+
+.loading-spinner.small {
+  width: 24px;
+  height: 24px;
+  border-width: 3px;
+  margin: 0 auto;
 }
 </style>

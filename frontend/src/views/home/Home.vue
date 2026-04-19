@@ -35,6 +35,11 @@
           <h3>校园论坛</h3>
           <p>畅所欲言，交流分享</p>
         </div>
+        <div class="module-card" @click="goToMessages">
+          <div class="module-icon">✉️</div>
+          <h3>用户私信</h3>
+          <p>与好友私密聊天</p>
+        </div>
       </div>
       <div class="user-profile">
         <h3>我的信息</h3>
@@ -79,6 +84,10 @@ const goToMap = () => {
 
 const goToForum = () => {
   router.push('/forum')
+}
+
+const goToMessages = () => {
+  router.push('/messages')
 }
 </script>
 

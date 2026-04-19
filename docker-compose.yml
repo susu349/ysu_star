@@ -1,4 +1,24 @@
 services:
+  mysql:
+    container_name: campus-mysql
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: campus_ai
+      MYSQL_USER: campus_ai
+      MYSQL_PASSWORD: campus_ai_password
+    volumes:
+      - mysql_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - campus
+
   etcd:
     container_name: milvus-etcd
     image: quay.io/coreos/etcd:v3.5.5
@@ -17,6 +37,7 @@ services:
       retries: 3
     networks:
       - milvus
+      - campus
 
   minio:
     container_name: milvus-minio
@@ -34,6 +55,7 @@ services:
       retries: 3
     networks:
       - milvus
+      - campus
 
   milvus:
     container_name: milvus-standalone
@@ -57,12 +79,16 @@ services:
       - "minio"
     networks:
       - milvus
+      - campus
 
 networks:
   milvus:
     name: milvus
+  campus:
+    name: campus
 
 volumes:
+  mysql_data:
   milvus_etcd:
   milvus_minio:
   milvus_data:
