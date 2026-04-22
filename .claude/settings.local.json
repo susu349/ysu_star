@@ -42,7 +42,9 @@
       "Bash(.venv/bin/python scripts/init_map_data.py 2>&1)",
       "Bash(.venv/bin/python -m pip install leaflet)",
       "Bash(.venv/bin/python -m campus_ai.main 2>&1)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(npm run:*)",
+      "Bash(.venv/bin/python -m campus_ai.main)"
     ]
   }
 }

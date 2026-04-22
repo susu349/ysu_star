@@ -1,12 +1,15 @@
 """
 地图打卡模块 API
 """
+import os
+import uuid
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File, Form
+from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File
 from sqlalchemy.orm import Session
 
 from ...core.database import get_db
 from ...core.security import get_current_active_user
+from ...core.config import get_settings
 from ...models.user import User
 from ...models.map import (
     POI, CheckIn, POIComment, CheckInComment
@@ -18,16 +21,36 @@ from ...schemas.map import (
     CheckInCommentCreate, CheckInCommentUpdate, CheckInCommentResponse, CheckInCommentListResponse,
     MapTopicCreate, MapTopicUpdate, MapTopicResponse, MapTopicListResponse,
     UserFavoritePOICreate, UserFavoritePOIResponse, UserFavoritePOIListResponse,
-    POISearchQuery, CheckInQuery, MapStatsResponse, CheckInWithUserResponse
+    MapStatsResponse
 )
 from ...services.map_service import (
     POIService, CheckInService, CheckInLikeService,
     POICommentService, CheckInCommentService,
     FavoriteService, TopicService, MapStatsService
 )
-from ...services.contest.storage_service import StorageService
 
+settings = get_settings()
 router = APIRouter(prefix="/map", tags=["智慧地图"])
+
+
+# 简单的文件上传帮助函数
+async def save_upload_file(file: UploadFile, subdir: str = "map") -> str:
+    """保存上传的文件"""
+    upload_dir = os.path.join(settings.UPLOAD_DIR, subdir)
+    os.makedirs(upload_dir, exist_ok=True)
+
+    # 生成唯一文件名
+    ext = os.path.splitext(file.filename)[1] or ".jpg"
+    filename = f"{uuid.uuid4().hex}{ext}"
+    file_path = os.path.join(upload_dir, filename)
+
+    # 保存文件
+    content = await file.read()
+    with open(file_path, "wb") as f:
+        f.write(content)
+
+    # 返回可访问的URL
+    return f"/uploads/{subdir}/{filename}"
 
 
 # ============== POI 相关接口 ==============
@@ -569,5 +592,5 @@ async def upload_map_image(
     current_user: User = Depends(get_current_active_user)
 ):
     """上传地图相关图片"""
-    url = await StorageService.save_upload_file(file, "map")
+    url = await save_upload_file(file, "map")
     return {"url": url}

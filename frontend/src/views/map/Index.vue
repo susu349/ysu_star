@@ -290,7 +290,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/store/modules/user'
 import L from 'leaflet'
@@ -346,6 +346,13 @@ const checkInForm = ref({
   visibility: 'public'
 })
 
+// 燕山大学校园地图上的POI坐标（基于图片像素位置）
+// 我们需要把经纬度映射到图片像素坐标，这里简化处理
+const poiPixelMap = {
+  // 这些是示例，需要根据实际地图调整
+  // "poi-id": [x, y] 像素坐标
+}
+
 // 工具函数
 const getPOIIcon = (type) => {
   const icons = {
@@ -370,22 +377,31 @@ const formatTime = (time) => {
   return date.toLocaleDateString('zh-CN')
 }
 
-// 地图操作
+// 地图操作 - 使用Simple CRS展示单张大图
 const initMap = () => {
-  // 燕山大学坐标
-  const center = [39.9067, 119.5146]
+  // 使用Simple CRS，像素坐标系统
+  const yx = L.CRS.Simple
 
+  // 地图图片尺寸 - 需要根据实际图片调整
+  const mapWidth = 4000
+  const mapHeight = 3000
+
+  // 创建地图
   map.value = L.map('map', {
-    center,
-    zoom: 17,
-    minZoom: 15,
-    maxZoom: 20
+    crs: yx,
+    minZoom: -2,
+    maxZoom: 2,
+    zoomControl: false
   })
 
-  // 使用天地图或简单的OSM
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap contributors'
-  }).addTo(map.value)
+  // 添加单张图片作为图层
+  const imageUrl = '/map-tiles/campus_map.png'
+  const imageBounds = [[0, 0], [mapHeight, mapWidth]]
+
+  L.imageOverlay(imageUrl, imageBounds).addTo(map.value)
+
+  // 设置地图视图到中心
+  map.value.setView([mapHeight / 2, mapWidth / 2], 0)
 
   // 添加POI标记
   updateMarkers()
@@ -403,7 +419,17 @@ const updateMarkers = () => {
   markers.value.forEach(m => m.remove())
   markers.value = []
 
-  hotPOIs.value.forEach(poi => {
+  // 为每个POI创建一个简单的标记（暂时使用随机位置，或者我们可以预定义位置）
+  const mapHeight = 3000
+  const mapWidth = 4000
+
+  hotPOIs.value.forEach((poi, index) => {
+    // 临时：在地图上分布POI
+    const row = Math.floor(index / 4)
+    const col = index % 4
+    const y = (mapHeight / 5) * (row + 1)
+    const x = (mapWidth / 5) * (col + 1)
+
     const icon = L.divIcon({
       html: `<div style="background: white; padding: 8px; border-radius: 50%; box-shadow: 0 2px 8px rgba(0,0,0,0.2); font-size: 20px;">${getPOIIcon(poi.poi_type)}</div>`,
       className: 'custom-marker',
@@ -411,7 +437,7 @@ const updateMarkers = () => {
       iconAnchor: [20, 20]
     })
 
-    const marker = L.marker([poi.latitude, poi.longitude], { icon })
+    const marker = L.marker([y, x], { icon })
       .addTo(map.value)
       .on('click', () => openPOIDetail(poi))
 
@@ -421,10 +447,13 @@ const updateMarkers = () => {
 
 const zoomIn = () => map.value?.zoomIn()
 const zoomOut = () => map.value?.zoomOut()
-const resetView = () => map.value?.setView([39.9067, 119.5146], 17)
+const resetView = () => {
+  const mapHeight = 3000
+  const mapWidth = 4000
+  map.value?.setView([mapHeight / 2, mapWidth / 2], 0)
+}
 
 const focusPOI = (poi) => {
-  map.value?.setView([poi.latitude, poi.longitude], 18)
   openPOIDetail(poi)
 }
 
@@ -873,6 +902,7 @@ onUnmounted(() => {
 .map-container {
   width: 100%;
   height: 100%;
+  background: #333;
 }
 
 .map-controls {
