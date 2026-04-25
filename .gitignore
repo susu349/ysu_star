@@ -62,6 +62,7 @@ dist-ssr/
 
 # Uploads
 uploads/
+map_tiles/
 
 # OS
 .DS_Store
@@ -75,3 +76,9 @@ logs/
 .pytest_cache/
 .coverage
 htmlcov/
+
+# 临时数据
+智慧地图/*.png
+智慧地图/*.jpg
+1.txt
+

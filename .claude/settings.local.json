@@ -44,7 +44,16 @@
       "Bash(.venv/bin/python -m campus_ai.main 2>&1)",
       "Bash(npm install:*)",
       "Bash(npm run:*)",
-      "Bash(.venv/bin/python -m campus_ai.main)"
+      "Bash(.venv/bin/python -m campus_ai.main)",
+      "Bash(find backend:*)",
+      "Bash(find /home/su/桌面/ysustar -name *map* -type f)",
+      "Bash(uv --version)",
+      "Bash(nc -z -w 2 localhost 3306)",
+      "Bash(./start.sh)",
+      "Bash(mv:*)",
+      "Bash(pkill -f \"campus_ai.main\")",
+      "Bash(pkill -f \"uvicorn\")",
+      "Bash(xargs -r kill -9)"
     ]
   }
 }

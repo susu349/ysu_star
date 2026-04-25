@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -8,13 +9,31 @@ from .api.router import api_router
 
 settings = get_settings()
 
-# 初始化数据库
-Base.metadata.create_all(bind=engine)
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    Base.metadata.create_all(bind=engine)
+    try:
+        from .core.milvus import get_milvus_client
+        milvus_client = get_milvus_client()
+        milvus_client.connect()
+    except Exception as e:
+        print(f"⚠️ Milvus连接失败（可选组件）: {e}")
+        print("   用户认证模块仍然可以正常使用")
+    yield
+    try:
+        from .core.milvus import get_milvus_client
+        milvus_client = get_milvus_client()
+        milvus_client.disconnect()
+    except:
+        pass
+
 
 app = FastAPI(
     title=settings.APP_NAME,
     version="0.1.0",
     description="校园AI助手后端API",
+    lifespan=lifespan,
     debug=settings.is_dev,
 )
 
